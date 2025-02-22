@@ -10,6 +10,7 @@ from typing import List, Dict
 from datetime import datetime
 import logging
 import wikipedia
+from bs4 import BeautifulSoup
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -21,48 +22,35 @@ genai.configure(api_key=api_key)
 
 class InternetSearchTool:
     def search(self, query: str) -> List[Dict]:
-        """Search Wikipedia for information."""
+        """Search Wikipedia for information by scraping the page."""
         try:
             logging.info(f"Searching Wikipedia for: {query}")
             
-            # Search Wikipedia
-            search_results = wikipedia.search(query, results=3)
-            results = []
+            # Create the search URL
+            search_url = f'https://en.wikipedia.org/w/index.php?search={query}'
+            response = requests.get(search_url)
+            logging.info(f"Received response with status code: {response.status_code}")
             
-            for title in search_results:
-                try:
-                    # Get page summary
-                    page = wikipedia.page(title)
-                    summary = wikipedia.summary(title, sentences=3)
-                    results.append({
-                        'Text': summary,
-                        'FirstURL': page.url,
-                        'Title': title
-                    })
-                    logging.info(f"Found Wikipedia article: {title}")
-                except wikipedia.exceptions.DisambiguationError as e:
-                    # Handle disambiguation pages
-                    alternative = e.options[0]
-                    try:
-                        page = wikipedia.page(alternative)
-                        summary = wikipedia.summary(alternative, sentences=3)
-                        results.append({
-                            'Text': summary,
-                            'FirstURL': page.url,
-                            'Title': alternative
-                        })
-                        logging.info(f"Found Wikipedia article (alternative): {alternative}")
-                    except:
-                        continue
-                except:
-                    continue
+            if response.status_code != 200:
+                st.error(f"Search request failed with status code: {response.status_code}")
+                return []
             
-            if results:
-                st.success(f"✅ Found {len(results)} relevant articles on Wikipedia")
-                return results
+            # Parse the HTML content
+            soup = BeautifulSoup(response.text, 'html.parser')
             
-            st.warning("⚠️ No relevant information found on Wikipedia")
-            return []
+            # Find the first paragraph of the page
+            first_paragraph = soup.find('p').text
+            title = soup.title.string
+            
+            results = [{
+                'Text': first_paragraph,
+                'FirstURL': search_url,
+                'Title': title
+            }]
+            
+            logging.info(f"Found relevant information from Wikipedia")
+            st.success(f"✅ Found relevant information from Wikipedia")
+            return results
             
         except Exception as e:
             logging.error(f"Error in Wikipedia search: {str(e)}")
