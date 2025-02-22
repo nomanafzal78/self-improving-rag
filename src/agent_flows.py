@@ -113,8 +113,6 @@ class ConditionalAgent(Agent):
 
 # Define the internet search agent
 class InternetSearchAgent(Agent):
-    search_tool = None
-    
     def __init__(self):
         super().__init__(
             role="Internet Researcher",
@@ -124,29 +122,31 @@ class InternetSearchAgent(Agent):
             verbose=True
         )
         logging.info("Initializing InternetSearchAgent...")
-        InternetSearchAgent.search_tool = InternetSearchTool() if InternetSearchAgent.search_tool is None else InternetSearchAgent.search_tool
+        self._search_tool = InternetSearchTool()
         logging.info("search_tool initialized successfully.")
         
     def run(self, query):
         st.info("🌐 Searching the internet for information...")
-        if not InternetSearchAgent.search_tool:
-            InternetSearchAgent.search_tool = InternetSearchTool()
+        try:
+            search_results = self._search_tool.search(query)
             
-        search_results = InternetSearchAgent.search_tool.search(query)
-        
-        if search_results:
-            # Combine search results into a single text
-            combined_info = "\n\n".join([
-                f"Source {i+1}:\n{result.get('Text', '')}\nURL: {result.get('FirstURL', '')}"
-                for i, result in enumerate(search_results) if result.get('Text')
-            ])
-            
-            if combined_info.strip():
-                st.success("✅ Found relevant information from the internet")
-                return combined_info
+            if search_results:
+                # Combine search results into a single text
+                combined_info = "\n\n".join([
+                    f"Source {i+1}:\n{result.get('Text', '')}\nURL: {result.get('FirstURL', '')}"
+                    for i, result in enumerate(search_results) if result.get('Text')
+                ])
                 
-        st.warning("⚠️ No relevant information found on the internet")
-        return ""
+                if combined_info.strip():
+                    st.success("✅ Found relevant information from the internet")
+                    return combined_info
+                    
+            st.warning("⚠️ No relevant information found on the internet")
+            return ""
+        except Exception as e:
+            logging.error(f"Error in internet search: {str(e)}")
+            st.error(f"Error in internet search: {str(e)}")
+            return ""
 
 # Define the generation agent
 class GenerationAgent(Agent):
