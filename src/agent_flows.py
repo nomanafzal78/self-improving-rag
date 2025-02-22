@@ -8,6 +8,10 @@ import streamlit as st
 import requests
 from typing import List, Dict
 from datetime import datetime
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 
 # Configure the Gemini API
 # Using the provided API key
@@ -115,7 +119,9 @@ class InternetSearchAgent(Agent):
             goal="Find relevant information from the internet when PDF content is insufficient",
             backstory="I am an expert at searching the internet for accurate and relevant information."
         )
+        logging.info("Initializing InternetSearchAgent...")
         self.search_tool = InternetSearchTool()
+        logging.info("search_tool initialized successfully.")
         
     def run(self, query):
         st.info("🌐 Searching the internet for information...")
