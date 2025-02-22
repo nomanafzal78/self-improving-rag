@@ -33,8 +33,9 @@ class InternetSearchTool:
                 "t": "self-improving-rag"  # Custom user agent
             }
             
-            st.info("🔍 Sending search request to DuckDuckGo...")
+            logging.info(f"Sending search request to DuckDuckGo with query: {query}")
             response = requests.get(url, params=params)
+            logging.info(f"Received response with status code: {response.status_code}")
             
             if response.status_code != 200:
                 st.error(f"Search request failed with status code: {response.status_code}")
@@ -57,10 +58,12 @@ class InternetSearchTool:
             # Add topics to results
             search_results.extend(topics[:2])  # Limit to 2 additional results
             
+            logging.info(f"Found {len(search_results)} relevant results")
             st.success(f"✅ Found {len(search_results)} relevant results")
             return search_results
             
         except Exception as e:
+            logging.error(f"Error in internet search: {str(e)}")
             st.error(f"Error in internet search: {str(e)}")
             return []
 
