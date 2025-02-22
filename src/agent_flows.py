@@ -190,12 +190,12 @@ Please provide a clear and accurate answer based on the provided content."""
 
 def test_agents(query):
     # Initialize agents
-    retrieval_agent = RetrievalAgent()
-    conditional_agent = ConditionalAgent()
-    internet_agent = InternetSearchAgent()
-    generation_agent = GenerationAgent()
-
     try:
+        retrieval_agent = RetrievalAgent()
+        conditional_agent = ConditionalAgent()
+        internet_agent = InternetSearchAgent()
+        generation_agent = GenerationAgent()
+
         # Step 1: Retrieve information from PDF
         st.info("📄 Retrieving information from PDF...")
         retrieved_info = retrieval_agent.run(query)
@@ -204,10 +204,15 @@ def test_agents(query):
         st.info("🔍 Analyzing content relevance...")
         is_relevant = conditional_agent.run(retrieved_info, query)
 
-        # Step 3: If not relevant or no clear answer, search internet
+        # Step 3: If not relevant, search internet
         internet_info = ""
         if not is_relevant:
-            internet_info = internet_agent.run(query)
+            st.info("🌐 Content not found in PDF, searching internet...")
+            try:
+                internet_info = internet_agent.run(query)
+            except Exception as e:
+                logging.error(f"Internet search error: {str(e)}")
+                st.warning("⚠️ Unable to search internet, proceeding with available information")
 
         # Step 4: Generate response
         st.info("💭 Generating response...")
@@ -219,8 +224,16 @@ def test_agents(query):
             response = generation_agent.run(retrieved_info, query)
             return response
         else:
-            return "I could not find relevant information in either the PDF or internet search results. Please try rephrasing your question or provide more context."
+            st.warning("⚠️ No relevant information found in PDF or internet")
+            # Still try to generate a response with what we have
+            try:
+                response = generation_agent.run(retrieved_info, query)
+                return "Note: The following response may not be fully relevant to your query:\n\n" + response
+            except Exception as e:
+                logging.error(f"Generation error: {str(e)}")
+                return "I apologize, but I couldn't find relevant information to answer your question. Please try rephrasing or asking a different question."
             
     except Exception as e:
-        st.error(f"An error occurred: {str(e)}")
-        return f"Error processing your request: {str(e)}" 
+        logging.error(f"An error occurred in test_agents: {str(e)}")
+        st.error("An error occurred while processing your request. Please try again.")
+        return f"Error: {str(e)}" 
