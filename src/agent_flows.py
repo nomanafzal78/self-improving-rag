@@ -36,6 +36,7 @@ class InternetSearchTool:
             logging.info(f"Sending search request to DuckDuckGo with query: {query}")
             response = requests.get(url, params=params)
             logging.info(f"Received response with status code: {response.status_code}")
+            logging.info(f"Response content: {response.text}")  # Log the full response content
             
             if response.status_code != 200:
                 st.error(f"Search request failed with status code: {response.status_code}")
