@@ -9,6 +9,7 @@ import requests
 from typing import List, Dict
 from datetime import datetime
 import logging
+import wikipedia
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -20,52 +21,52 @@ genai.configure(api_key=api_key)
 
 class InternetSearchTool:
     def search(self, query: str) -> List[Dict]:
-        """Search the internet for information using DuckDuckGo."""
+        """Search Wikipedia for information."""
         try:
-            # Using DuckDuckGo API for internet search
-            url = "https://api.duckduckgo.com/"
-            params = {
-                "q": query,
-                "format": "json",
-                "no_redirect": 1,
-                "no_html": 1,
-                "skip_disambig": 1,
-                "t": "self-improving-rag"  # Custom user agent
-            }
+            logging.info(f"Searching Wikipedia for: {query}")
             
-            logging.info(f"Sending search request to DuckDuckGo with query: {query}")
-            response = requests.get(url, params=params)
-            logging.info(f"Received response with status code: {response.status_code}")
-            logging.info(f"Response content: {response.text}")  # Log the full response content
+            # Search Wikipedia
+            search_results = wikipedia.search(query, results=3)
+            results = []
             
-            if response.status_code != 200:
-                st.error(f"Search request failed with status code: {response.status_code}")
-                return []
-                
-            results = response.json()
+            for title in search_results:
+                try:
+                    # Get page summary
+                    page = wikipedia.page(title)
+                    summary = wikipedia.summary(title, sentences=3)
+                    results.append({
+                        'Text': summary,
+                        'FirstURL': page.url,
+                        'Title': title
+                    })
+                    logging.info(f"Found Wikipedia article: {title}")
+                except wikipedia.exceptions.DisambiguationError as e:
+                    # Handle disambiguation pages
+                    alternative = e.options[0]
+                    try:
+                        page = wikipedia.page(alternative)
+                        summary = wikipedia.summary(alternative, sentences=3)
+                        results.append({
+                            'Text': summary,
+                            'FirstURL': page.url,
+                            'Title': alternative
+                        })
+                        logging.info(f"Found Wikipedia article (alternative): {alternative}")
+                    except:
+                        continue
+                except:
+                    continue
             
-            # Get both RelatedTopics and AbstractText
-            topics = results.get('RelatedTopics', [])
-            abstract = results.get('AbstractText', '')
+            if results:
+                st.success(f"✅ Found {len(results)} relevant articles on Wikipedia")
+                return results
             
-            # Combine abstract with topics if available
-            search_results = []
-            if abstract:
-                search_results.append({
-                    'Text': abstract,
-                    'FirstURL': results.get('AbstractURL', '')
-                })
-            
-            # Add topics to results
-            search_results.extend(topics[:2])  # Limit to 2 additional results
-            
-            logging.info(f"Found {len(search_results)} relevant results")
-            st.success(f"✅ Found {len(search_results)} relevant results")
-            return search_results
+            st.warning("⚠️ No relevant information found on Wikipedia")
+            return []
             
         except Exception as e:
-            logging.error(f"Error in internet search: {str(e)}")
-            st.error(f"Error in internet search: {str(e)}")
+            logging.error(f"Error in Wikipedia search: {str(e)}")
+            st.error(f"Error in Wikipedia search: {str(e)}")
             return []
 
 # Define the retrieval agent
