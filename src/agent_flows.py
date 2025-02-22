@@ -113,19 +113,26 @@ class ConditionalAgent(Agent):
 
 # Define the internet search agent
 class InternetSearchAgent(Agent):
+    search_tool = None
+    
     def __init__(self):
         super().__init__(
             role="Internet Researcher",
             goal="Find relevant information from the internet when PDF content is insufficient",
-            backstory="I am an expert at searching the internet for accurate and relevant information."
+            backstory="I am an expert at searching the internet for accurate and relevant information.",
+            allow_delegation=False,
+            verbose=True
         )
         logging.info("Initializing InternetSearchAgent...")
-        self.search_tool = InternetSearchTool()
+        InternetSearchAgent.search_tool = InternetSearchTool() if InternetSearchAgent.search_tool is None else InternetSearchAgent.search_tool
         logging.info("search_tool initialized successfully.")
         
     def run(self, query):
         st.info("🌐 Searching the internet for information...")
-        search_results = self.search_tool.search(query)
+        if not InternetSearchAgent.search_tool:
+            InternetSearchAgent.search_tool = InternetSearchTool()
+            
+        search_results = InternetSearchAgent.search_tool.search(query)
         
         if search_results:
             # Combine search results into a single text
