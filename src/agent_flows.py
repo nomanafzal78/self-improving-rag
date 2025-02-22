@@ -38,8 +38,8 @@ class InternetSearchTool:
             soup = BeautifulSoup(response.text, 'html.parser')
             
             # Find the first paragraph of the page
-            first_paragraph = soup.find('p').text
-            title = soup.title.string
+            first_paragraph = soup.find('p').text if soup.find('p') else 'No content found.'
+            title = soup.title.string if soup.title else 'No title found.'
             
             results = [{
                 'Text': first_paragraph,
