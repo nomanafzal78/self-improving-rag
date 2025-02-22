@@ -9,7 +9,6 @@ import requests
 from typing import List, Dict
 from datetime import datetime
 import logging
-import wikipedia
 from bs4 import BeautifulSoup
 
 # Configure logging
